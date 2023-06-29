@@ -32,6 +32,7 @@ struct Light {
 };
   
 uniform vec3 viewPos;
+uniform samplerCube skybox;
 uniform Material material;
 uniform Light light;
 
@@ -46,32 +47,19 @@ void main()
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.texture_diffuse1, Texcoord));
     // specular
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = light.specular * spec * vec3(texture(material.texture_specular1, Texcoord));
+    vec3 viewDir = normalize(FragPos - viewPos);
+    vec3 reflectDir = reflect(viewDir, norm);  
+    //float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    //vec3 specular = light.specular * vec3(texture(material.texture_specular1, Texcoord));
+    vec3 tempspecular = vec3(texture(skybox, reflectDir));
     // normal 
     vec3 texNormal = vec3(1.0f) * vec3(texture(material.texture_normal1, Texcoord));
     //roughness
     vec3 roughness = vec3(1.0f) * vec3(texture(material.texture_roughness1, Texcoord));
-
-    float distance = length(light.position - FragPos);
-    float attenuation = 1/(light.constant + light.linear * distance + light.quadratic * (distance * distance));
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-    texNormal *= attenuation;
-
-    float theta = dot(-lightDir, normalize(light.direction));
-    float epislon = light.cutoff - light.outerCutOff;
-    float intensity = clamp((theta - light.outerCutOff)/epislon, 0.0f, 1.0f);
-    diffuse *= intensity;
-    specular *= intensity;
-    if(theta > light.cutoff)
-    {
-        vec3 result = ambient + diffuse + specular + texNormal + roughness;
-        FragColor = vec4(result, 1.0);
-    }
+           
+    vec3 result = ambient + diffuse + tempspecular;
+    FragColor = vec4(result, 1.0);
     
-    else FragColor = vec4(light.ambient * vec3(texture(material.texture_diffuse1,Texcoord)), 1.0f);
+    
+    
 } 
